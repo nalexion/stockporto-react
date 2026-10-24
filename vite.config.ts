@@ -68,6 +68,9 @@ export default defineConfig(() => {
   const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
   
   return {
+    // Permanent base path for GitHub Pages deployment (https://nalexion.github.io/stockporto-react/).
+    // Do not remove or override this base configuration.
+    base: '/stockporto-react/',
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
     },

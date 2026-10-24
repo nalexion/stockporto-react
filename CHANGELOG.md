@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.4] - 2026-10-24
+
+### Configured
+- **Permanent GitHub Pages Base Path (`vite.config.ts` & `server.ts`)**:
+  - Set `base: '/stockporto-react/'` in `vite.config.ts` so production builds permanently target `https://nalexion.github.io/stockporto-react/`.
+  - Mounted `/stockporto-react` static asset serving alongside `/` in `server.ts` so both GitHub Pages builds and local/containerized Express servers resolve assets seamlessly.
+
 ## [2.3.3] - 2026-10-24
 
 ### Cleaned & Documented
