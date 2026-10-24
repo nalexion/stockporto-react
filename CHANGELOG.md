@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.3] - 2026-10-24
+
+### Cleaned & Documented
+- **Workspace Root Cleanup & Diagnostic Reference Preservation (`v2.3.3`)**:
+  - Removed 76 obsolete one-off migration, patch, and diagnostic scratch files (`fix_*.cjs`, `patch_*.cjs`, `test*.js/cjs/ts`, `sim*.ts`, `debug_chart.cjs`, `run_diagnostics.cjs`, `get_old_chart.js`, `response.json`) from the project root directory.
+  - Preserved all useful symbol mappings and diagnostic patterns directly in the codebase and changelog:
+    - **Exchange Suffix Remapping (`server.ts` & `src/lib/api.ts`)**: `.NL` tickers automatically normalize to `.AS` (Euronext Amsterdam) for Yahoo Finance queries and map back to `.NL` for UI consistency; `.US` suffixes are stripped before querying Yahoo Finance and remapped to `.US` lots.
+    - **BVB & European ETF Sector Profiles (`server.ts`)**: Added `PTENGETF.RO` (`ETFs & Funds` / `Energy Sector ETFs`) alongside `TVBETETF.RO` and the BVB blue-chip profile dictionary (`TLV.RO`, `SNP.RO`, `H2O.RO`, `SNG.RO`, `SNN.RO`, `DIGI.RO`, `LION.RO`, etc.).
+
 ## [2.3.2] - 2026-10-17
 
 ### Security

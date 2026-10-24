@@ -489,6 +489,7 @@ const KNOWN_PROFILES: Record<string, { sector: string; industry: string }> = {
   'TRANSI.RO': { sector: 'Financial Services', industry: 'Asset Management' },
   'CMCM.RO': { sector: 'Basic Materials', industry: 'Building Materials' },
   'TVBETETF.RO': { sector: 'ETFs & Funds', industry: 'Index Tracking Equity ETFs' },
+  'PTENGETF.RO': { sector: 'ETFs & Funds', industry: 'Energy Sector ETFs' },
   'CSPX.AS': { sector: 'ETFs & Funds', industry: 'Large Cap Blend Index ETFs' },
   'VWCE.DE': { sector: 'ETFs & Funds', industry: 'Global Equity Index ETFs' },
   'VUAA.DE': { sector: 'ETFs & Funds', industry: 'Large Cap Blend Index ETFs' },
