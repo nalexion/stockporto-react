@@ -1068,9 +1068,13 @@ export interface AnalyzeResult {
   recommendationRationale: string;
 }
 
+declare const __GEMINI_API_KEY__: string | undefined;
+
 function getClientGeminiApiKey(): string {
-  const key = ((import.meta as any).env?.VITE_GEMINI_API_KEY || '').trim();
-  if (!key || key === 'MY_GEMINI_API_KEY') return '';
+  const fromViteEnv = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  const fromDefined = typeof __GEMINI_API_KEY__ !== 'undefined' ? __GEMINI_API_KEY__ : '';
+  const key = String(fromViteEnv || fromDefined || '').trim();
+  if (!key || key === 'MY_GEMINI_API_KEY' || key === 'undefined') return '';
   return key;
 }
 

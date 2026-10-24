@@ -2,7 +2,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
-import {defineConfig, Plugin} from 'vite';
+import {defineConfig, loadEnv, Plugin} from 'vite';
 
 // LINT.IfChange(aistudio_media_plugin)
 function aistudioMediaPlugin(): Plugin {
@@ -86,15 +86,23 @@ function githubPagesSpaPlugin(): Plugin {
   };
 }
 
-export default defineConfig(() => {
+export default defineConfig(({mode}) => {
   const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
-  
+  const env = loadEnv(mode, '.', '');
+  const geminiApiKey =
+    env.VITE_GEMINI_API_KEY ||
+    env.GEMINI_API_KEY ||
+    process.env.VITE_GEMINI_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    '';
+
   return {
     // Permanent base path for GitHub Pages deployment (https://nalexion.github.io/stockporto-react/).
     // Do not remove or override this base configuration.
     base: '/stockporto-react/',
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
+      __GEMINI_API_KEY__: JSON.stringify(geminiApiKey),
     },
     plugins: [react(), tailwindcss(), aistudioMediaPlugin(), githubPagesSpaPlugin()],
     resolve: {
