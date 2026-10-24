@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan for enabling real-time market quotes, historical charts, and Market Intelligence / Portfolio Diagnostics on static GitHub Pages deployments via automatic client-side Yahoo Finance/BVB fallbacks and a dual-mode quantitative + Gemini advisory engine.",
+  "updatedAt":  "2026-10-24T11:50:24.545897081Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}
