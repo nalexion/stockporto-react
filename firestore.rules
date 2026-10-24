@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128;
+    }
+
+    function isValidPortfolioPayload(data) {
+      return data.userId == request.auth.uid
+        && data.name is string
+        && data.name.size() >= 1
+        && data.name.size() <= 120
+        && data.currency in ['USD', 'EUR', 'RON'];
+    }
+
+    function isValidLotPayload(data) {
+      return data.userId == request.auth.uid
+        && data.portfolioId is string
+        && data.portfolioId.size() >= 1
+        && data.portfolioId.size() <= 128
+        && data.ticker is string
+        && data.ticker.size() >= 1
+        && data.ticker.size() <= 32
+        && data.tradeDate is string
+        && data.tradeDate.size() >= 8
+        && data.tradeDate.size() <= 32
+        && data.shares is number
+        && data.shares >= 0
+        && data.buyPrice is number
+        && data.buyPrice >= 0
+        && data.transactionType in ['BUY', 'SELL', 'DEPOSIT', 'WITHDRAWAL', 'DIVIDEND', 'SPLIT']
+        && (!('comment' in data) || (data.comment is string && data.comment.size() <= 1000))
+        && (!('commission' in data) || (data.commission is number && data.commission >= 0));
+    }
+
+    match /portfolios/{portfolioId} {
+      allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidId(portfolioId)
+        && isValidPortfolioPayload(request.resource.data);
+      allow update: if isSignedIn()
+        && isValidId(portfolioId)
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && isValidPortfolioPayload(request.resource.data);
+    }
+
+    match /lots/{lotId} {
+      allow read, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidId(lotId)
+        && isValidLotPayload(request.resource.data);
+      allow update: if isSignedIn()
+        && isValidId(lotId)
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.portfolioId == resource.data.portfolioId
+        && isValidLotPayload(request.resource.data);
+    }
+
+    match /userSettings/{userId} {
+      allow read, delete: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn()
+        && request.auth.uid == userId
+        && (!('userId' in request.resource.data) || request.resource.data.userId == userId);
+    }
+  }
+}

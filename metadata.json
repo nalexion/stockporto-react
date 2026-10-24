@@ -1,0 +1,6 @@
+{
+  "name": "StocksPortofolio",
+  "description": "A full-stack web application to track stock portfolios, import CSVs, and monitor P&L.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

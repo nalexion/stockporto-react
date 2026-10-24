@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* 60% Dominant Neutral Canvas (Crisp Institutional Light) */
+  --color-canvas: #F8FAFC;
+  --color-canvas-subtle: #F1F5F9;
+
+  /* 30% Structural Surfaces & Typography Hierarchy */
+  --color-surface: #FFFFFF;
+  --color-border-hairline: #E2E8F0;
+  --color-border-strong: #CBD5E1;
+  --color-ink-primary: #0F172A;
+  --color-ink-secondary: #334155;
+  --color-ink-muted: #64748B;
+
+  /* 10% High-Intent Institutional Accent & Semantic Financial Tokens */
+  --color-accent: #1E40AF;
+  --color-accent-hover: #1E3A8A;
+  --color-accent-subtle: #EFF6FF;
+  --color-accent-border: #BFDBFE;
+
+  --color-gain: #059669;
+  --color-gain-strong: #047857;
+  --color-gain-subtle: #ECFDF5;
+  --color-gain-border: #A7F3D0;
+
+  --color-loss: #E11D48;
+  --color-loss-strong: #BE123C;
+  --color-loss-subtle: #FFF1F2;
+  --color-loss-border: #FECDD3;
+
+  --color-advisory: #D97706;
+  --color-advisory-strong: #B45309;
+  --color-advisory-subtle: #FFFBEB;
+  --color-advisory-border: #FDE68A;
+}
+
+@layer base {
+  html, body {
+    font-family: var(--font-sans);
+    background-color: var(--color-canvas);
+    color: var(--color-ink-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+    color: var(--color-ink-primary);
+    text-wrap: balance;
+  }
+
+  .font-mono,
+  .tabular-nums,
+  input[type="number"],
+  input[type="date"] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
+  }
+}

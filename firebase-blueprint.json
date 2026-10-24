@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "Portfolio": {
+      "title": "Portfolio",
+      "description": "User investment portfolio container",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "currency": { "type": "string", "enum": ["USD", "EUR", "RON"] }
+      },
+      "required": ["id", "userId", "name", "currency"]
+    },
+    "TradeLot": {
+      "title": "TradeLot",
+      "description": "Individual stock, ETF, bond, dividend, or cash transaction lot",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "portfolioId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "ticker": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "tradeDate": { "type": "string", "maxLength": 32 },
+        "shares": { "type": "number" },
+        "buyPrice": { "type": "number" },
+        "brokerType": { "type": "string", "enum": ["Resident", "Non-Resident"] },
+        "status": { "type": "string", "enum": ["OPEN", "CLOSED"] },
+        "transactionType": { "type": "string", "enum": ["BUY", "SELL", "DEPOSIT", "WITHDRAWAL", "DIVIDEND", "SPLIT"] },
+        "commission": { "type": "number" },
+        "comment": { "type": "string", "maxLength": 1000 },
+        "acquisitionMethod": { "type": "string", "enum": ["SUBSCRIPTION", "SECONDARY"] },
+        "cleanPrice": { "type": "number" },
+        "accruedInterest": { "type": "number" },
+        "dirtyPrice": { "type": "number" },
+        "totalInterestAdvanced": { "type": "number" },
+        "repaidAdvance": { "type": "number" },
+        "grossCouponCash": { "type": "number" },
+        "couponRate": { "type": "number" },
+        "couponStartDate": { "type": "string", "maxLength": 32 },
+        "maturityYears": { "type": "number" },
+        "maturityDate": { "type": "string", "maxLength": 32 }
+      },
+      "required": ["id", "portfolioId", "userId", "ticker", "tradeDate", "shares", "buyPrice", "transactionType"]
+    },
+    "UserSettings": {
+      "title": "UserSettings",
+      "description": "User-specific tax configuration settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 }
+      }
+    }
+  },
+  "firestore": {
+    "/portfolios/{portfolioId}": {
+      "schema": { "$ref": "#/entities/Portfolio" },
+      "description": "User portfolios"
+    },
+    "/lots/{lotId}": {
+      "schema": { "$ref": "#/entities/TradeLot" },
+      "description": "User trade lots"
+    },
+    "/userSettings/{userId}": {
+      "schema": { "$ref": "#/entities/UserSettings" },
+      "description": "User custom tax rules"
+    }
+  }
+}
