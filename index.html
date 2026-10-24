@@ -15,19 +15,7 @@
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      window.addEventListener('error', function (e) {
-        var target = e && e.target;
-        if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK')) {
-          var src = target.src || target.href || '';
-          if (src.indexOf('/assets/') !== -1 && !sessionStorage.getItem('gh_pages_cache_busted')) {
-            sessionStorage.setItem('gh_pages_cache_busted', '1');
-            window.location.replace(window.location.pathname + '?v=' + Date.now() + window.location.hash);
-          }
-        }
-      }, true);
-    </script>
-    <script type="module" src="./src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
 

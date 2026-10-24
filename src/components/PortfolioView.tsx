@@ -156,7 +156,7 @@ export default function PortfolioView({ portfolio, onBack, onTransactionAdded, o
       const minDate = dates.length > 0 ? dates[0] : todayStr;
       const maxDate = todayStr;
       
-      const tickers = Array.from(new Set(fetchedLots.filter(l => l.status === 'OPEN' && !l.ticker.includes('CASH')).map(l => l.ticker)));
+      const tickers = Array.from(new Set(fetchedLots.filter(l => !l.ticker.includes('CASH')).map(l => l.ticker)));
       
       const [quotes, fxRates] = await Promise.all([
         tickers.length > 0 ? fetchQuotes(tickers, portfolio.currency) : Promise.resolve({} as Record<string, any>),

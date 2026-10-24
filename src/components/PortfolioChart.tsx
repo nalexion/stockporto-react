@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Portfolio, TradeLot } from '../types';
-import { fetchHistorical } from '../lib/api';
 import { generatePortfolioHistory } from '../lib/chartUtils';
 
 interface PortfolioChartProps {

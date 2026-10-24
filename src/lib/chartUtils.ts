@@ -1,19 +1,10 @@
 import { TradeLot } from '../types';
-import { fetchHistorical } from './api';
+import { fetchHistoricalBatch } from './api';
 
 export async function generatePortfolioHistory(lots: TradeLot[], period: string): Promise<any[]> {
   const uniqueTickers = Array.from(new Set(lots.filter(l => l.ticker !== '$$CASH_TX').map(l => l.ticker)));
   
-  // Fetch historical for all tickers in chunks of 3 to avoid rate limiting
-  const histDataArr = [];
-  for (let i = 0; i < uniqueTickers.length; i += 3) {
-    const chunk = uniqueTickers.slice(i, i + 3);
-    const chunkResults = await Promise.all(chunk.map(t => fetchHistorical(t, period)));
-    histDataArr.push(...chunkResults);
-    if (i + 3 < uniqueTickers.length) {
-       await new Promise(r => setTimeout(r, 600)); // Sleep between chunks
-    }
-  }
+  const histByTicker = await fetchHistoricalBatch(uniqueTickers, period);
   
   const end = new Date();
   const start = new Date();
@@ -29,12 +20,6 @@ export async function generatePortfolioHistory(lots: TradeLot[], period: string)
   }
   
   const endStr = end.toISOString().split('T')[0];
-  
-  // Map history by ticker
-  const histByTicker: Record<string, any[]> = {};
-  uniqueTickers.forEach((t, i) => {
-    histByTicker[t] = histDataArr[i] || [];
-  });
   
   // Gather all unique dates from the histories
   const allDates = new Set<string>();

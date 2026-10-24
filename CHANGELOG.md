@@ -5,21 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.3.5] - 2026-10-24
-
-### Fixed
-- **GitHub Pages Blank Screen, Stale Cache Recovery & Static-Host API Resolution (`v2.3.5`)**:
-  - **Stale Asset Cache Recovery (`index.html` & `src/main.tsx`)**: Added automatic one-time cache-busting reload on module/stylesheet load failure (`vite:preloadError` & `<script>`/`<link>` 404 recovery) and a top-level `RootErrorBoundary` so browsers that cached an older `index.html` across GitHub Pages deployments (`Cache-Control: max-age=600`) automatically load the latest bundle instead of rendering a blank page.
-  - **GitHub Pages Artifact Hardening (`.github/workflows/deploy.yml` & `vite.config.ts`)**: Added `githubPagesSpaPlugin()` and updated `.github/workflows/deploy.yml` to build clean static client assets (`npx vite build`) with `dist/404.html` and `dist/.nojekyll` (excluding Node server bundles from the static Pages artifact).
-  - **Static-Host API Bridge & Serverless Client Fallbacks (`src/lib/api.ts` & `server.ts`)**: Enabled CORS for `https://nalexion.github.io` in `server.ts`, routed `/api/*` calls on `*.github.io` to the Cloud Run backend instead of hitting non-existent `https://nalexion.github.io/api/*` endpoints (which caused 404/405 `"Content unavailable. Resource was not cached"` network errors), and added direct CORS-safe client-side ECB/Frankfurter FX (`api.frankfurter.dev`) and Fidelis bond valuation fallbacks.
-
-## [2.3.4] - 2026-10-24
-
-### Configured
-- **Permanent GitHub Pages Base Path (`vite.config.ts` & `server.ts`)**:
-  - Set `base: '/stockporto-react/'` in `vite.config.ts` so production builds permanently target `https://nalexion.github.io/stockporto-react/`.
-  - Mounted `/stockporto-react` static asset serving alongside `/` in `server.ts` so both GitHub Pages builds and local/containerized Express servers resolve assets seamlessly.
-
 ## [2.3.3] - 2026-10-24
 
 ### Cleaned & Documented

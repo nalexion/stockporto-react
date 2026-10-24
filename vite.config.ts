@@ -64,47 +64,15 @@ function aistudioMediaPlugin(): Plugin {
 }
 // LINT.ThenChange(//depot/google3/java/com/google/alkali/boq/makersuite/applet_dev_service/templates/initializers/react_theme/vite.config.ts:aistudio_media_plugin)
 
-function githubPagesSpaPlugin(): Plugin {
-  return {
-    name: 'vite-plugin-github-pages-spa',
-    closeBundle() {
-      const distDir = path.resolve(__dirname, 'dist');
-      const indexHtml = path.join(distDir, 'index.html');
-      const notFoundHtml = path.join(distDir, '404.html');
-      const noJekyll = path.join(distDir, '.nojekyll');
-      try {
-        if (fs.existsSync(indexHtml)) {
-          fs.copyFileSync(indexHtml, notFoundHtml);
-        }
-        if (fs.existsSync(distDir)) {
-          fs.writeFileSync(noJekyll, '');
-        }
-      } catch {
-        // Ignore non-fatal post-build copy errors
-      }
-    },
-  };
-}
-
 export default defineConfig(({mode}) => {
   const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
   const env = loadEnv(mode, '.', '');
-  const geminiApiKey =
-    env.VITE_GEMINI_API_KEY ||
-    env.GEMINI_API_KEY ||
-    process.env.VITE_GEMINI_API_KEY ||
-    process.env.GEMINI_API_KEY ||
-    '';
-
   return {
-    // Permanent base path for GitHub Pages deployment (https://nalexion.github.io/stockporto-react/).
-    // Do not remove or override this base configuration.
-    base: '/stockporto-react/',
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
-      __GEMINI_API_KEY__: JSON.stringify(geminiApiKey),
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },
-    plugins: [react(), tailwindcss(), aistudioMediaPlugin(), githubPagesSpaPlugin()],
+    plugins: [react(), tailwindcss(), aistudioMediaPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
