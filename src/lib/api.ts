@@ -354,6 +354,46 @@ export async function deleteLot(id: string): Promise<void> {
   invalidateDataCache();
 }
 
+const CLOUD_RUN_API_BASE =
+  (import.meta as any).env?.VITE_API_BASE_URL ||
+  'https://ais-pre-adnpudfodqqdo7gypg5jls-345451106665.europe-west2.run.app';
+
+function isStaticGithubPagesHost(): boolean {
+  return typeof window !== 'undefined' && window.location.hostname.endsWith('github.io');
+}
+
+async function apiFetch(endpoint: string, init?: RequestInit): Promise<Response> {
+  if (isStaticGithubPagesHost()) {
+    return fetch(`${CLOUD_RUN_API_BASE}${endpoint}`, init);
+  }
+  const localRes = await fetch(endpoint, init);
+  if (localRes.status === 404 || localRes.status === 405) {
+    return fetch(`${CLOUD_RUN_API_BASE}${endpoint}`, init);
+  }
+  return localRes;
+}
+
+async function fetchClientFallbackFxRates(): Promise<{ EUR: number; USD: number; RON: number }> {
+  try {
+    const res = await fetch('https://api.frankfurter.dev/v1/latest?base=EUR&symbols=RON,USD');
+    if (res.ok) {
+      const data = await res.json();
+      const eurRon = Number(data?.rates?.RON);
+      const eurUsd = Number(data?.rates?.USD);
+      if (eurRon > 0 && eurUsd > 0) {
+        return {
+          EUR: Number(eurRon.toFixed(4)),
+          USD: Number((eurRon / eurUsd).toFixed(4)),
+          RON: 1,
+        };
+      }
+    }
+  } catch {
+    // Fall through to default rates
+  }
+  return { EUR: 4.97, USD: 4.60, RON: 1 };
+}
+
 export async function fetchBnrRates(): Promise<{ EUR: number, USD: number, RON: number }> {
   const now = Date.now();
   if (bnrRatesCache.promise && now - bnrRatesCache.timestamp < 30000) {
@@ -361,15 +401,55 @@ export async function fetchBnrRates(): Promise<{ EUR: number, USD: number, RON: 
   }
   const promise = (async () => {
     try {
-      const res = await fetch('/api/bnr-rates');
-      return await res.json();
-    } catch (e) {
-      console.warn("Failed to fetch BNR rates", e);
-      return { EUR: 4.97, USD: 4.60, RON: 1 };
+      const res = await apiFetch('/api/bnr-rates');
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data?.EUR === 'number' && data.EUR > 0 && typeof data?.USD === 'number' && data.USD > 0) {
+          return { EUR: data.EUR, USD: data.USD, RON: 1 };
+        }
+      }
+    } catch {
+      // Fall through to client-side ECB/Frankfurter FX fallback
     }
+    return fetchClientFallbackFxRates();
   })();
   bnrRatesCache = { promise, timestamp: now };
   return promise;
+}
+
+function buildFallbackFidelisQuotes(
+  tickers: string[],
+  targetCurrency: string,
+  rates: { EUR: number; USD: number; RON: number }
+): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const t of tickers) {
+    const meta = parseFidelisTicker(t);
+    if (!meta) continue;
+    const bondCurrency = meta.currency;
+    let fxRate = 1;
+    if (targetCurrency && bondCurrency !== targetCurrency) {
+      const inRon = bondCurrency === 'EUR' ? (rates.EUR || 4.97) : 1;
+      if (targetCurrency === 'RON') fxRate = inRon;
+      else if (targetCurrency === 'EUR') fxRate = inRon / (rates.EUR || 4.97);
+      else if (targetCurrency === 'USD') fxRate = inRon / (rates.USD || 4.60);
+    }
+    out[t] = {
+      price: meta.nominalPar,
+      regularMarketPrice: meta.nominalPar,
+      convertedPrice: meta.nominalPar * fxRate,
+      currency: bondCurrency,
+      fxRate,
+      targetCurrency: targetCurrency || bondCurrency,
+      quoteType: 'BOND',
+      market: 'ro_market',
+      exchange: 'BVB',
+      shortName: `Titluri de Stat Fidelis ${meta.maturityLabel} (${meta.currency})`,
+      sector: 'Government Bonds (Fidelis)',
+      industry: 'Romanian Sovereign Debt (BVB)',
+    };
+  }
+  return out;
 }
 
 export async function fetchQuotes(tickers: string[], targetCurrency: string): Promise<Record<string, any>> {
@@ -380,76 +460,121 @@ export async function fetchQuotes(tickers: string[], targetCurrency: string): Pr
     return t;
   });
   try {
-    const res = await fetch('/api/quotes', {
+    const res = await apiFetch('/api/quotes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tickers, targetCurrency }),
     });
     if (!res.ok) {
-      console.warn('Failed to fetch quotes');
-      return {};
+      const rates = await fetchBnrRates();
+      return buildFallbackFidelisQuotes(originalTickers, targetCurrency, rates);
     }
     const data = await res.json();
     const remappedData: Record<string, any> = {};
     for (const [key, val] of Object.entries(data)) {
       remappedData[key] = val;
       if (key.endsWith('.AS')) remappedData[key.replace('.AS', '.NL')] = val;
-      // also remap to original .US if present
       const originalUS = originalTickers.find(t => t === key + '.US');
       if (originalUS) remappedData[originalUS] = val;
     }
     return remappedData;
-  } catch (err) {
-    console.warn('Failed to fetch quotes (network error):', err);
-    return {};
+  } catch {
+    const rates = await fetchBnrRates();
+    return buildFallbackFidelisQuotes(originalTickers, targetCurrency, rates);
   }
 }
 
-export async function fetchHistorical(symbol: string, period: string, retries = 3): Promise<any[]> {
+export async function fetchHistorical(symbol: string, period: string, retries = 2): Promise<any[]> {
   if (symbol.endsWith('.NL')) symbol = symbol.replace('.NL', '.AS');
   if (symbol.endsWith('.US')) symbol = symbol.replace('.US', '');
+  if (parseFidelisTicker(symbol)) return [];
   try {
-    const res = await fetch('/api/historical', {
+    const res = await apiFetch('/api/historical', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ symbol, period }),
     });
     if (!res.ok) {
-      console.warn(`Failed to fetch historical for ${symbol}`);
       return [];
     }
     return await res.json();
-  } catch (err) {
-    if (retries > 0) {
-      console.warn(`Retrying fetch for ${symbol} due to network error...`);
+  } catch {
+    if (retries > 0 && !isStaticGithubPagesHost()) {
       await new Promise(r => setTimeout(r, 500));
       return fetchHistorical(symbol, period, retries - 1);
     }
-    console.warn(`Failed to fetch historical for ${symbol} (network error):`, err);
     return [];
   }
 }
 
-export async function fetchFxHistoricalRange(currency: string, startDate: string, endDate: string, retries = 3): Promise<Record<string, number>> {
+async function fetchClientFallbackFxHistoricalRange(
+  currency: string,
+  startDate: string,
+  endDate: string
+): Promise<Record<string, number>> {
+  const safeCurrency = currency.toUpperCase();
+  if (safeCurrency === 'RON') return {};
   try {
-    const res = await fetch('/api/fx-historical-range', {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+      return {};
+    }
+    start.setDate(start.getDate() - 5);
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = end.toISOString().split('T')[0];
+    const res = await fetch(
+      `https://api.frankfurter.dev/v1/${startStr}..${endStr}?base=${encodeURIComponent(safeCurrency)}&symbols=RON`
+    );
+    if (!res.ok) return {};
+    const data = await res.json();
+    const rawRates: Record<string, number> = {};
+    let lastValidRate = safeCurrency === 'EUR' ? 4.97 : 4.60;
+    for (const [d, obj] of Object.entries(data?.rates || {})) {
+      const r = Number((obj as any)?.RON);
+      if (r > 0) {
+        rawRates[d] = r;
+        lastValidRate = r;
+      }
+    }
+    const finalRates: Record<string, number> = {};
+    const current = new Date(start);
+    let currentRate = Object.values(rawRates)[0] || lastValidRate;
+    while (current <= end) {
+      const dString = current.toISOString().split('T')[0];
+      if (rawRates[dString]) {
+        currentRate = rawRates[dString];
+      }
+      finalRates[dString] = currentRate;
+      current.setDate(current.getDate() + 1);
+    }
+    return finalRates;
+  } catch {
+    return {};
+  }
+}
+
+export async function fetchFxHistoricalRange(currency: string, startDate: string, endDate: string, retries = 2): Promise<Record<string, number>> {
+  if (currency.toUpperCase() === 'RON') return {};
+  try {
+    const res = await apiFetch('/api/fx-historical-range', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ currency, startDate, endDate }),
     });
-    if (!res.ok) {
-      return {};
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+        return data;
+      }
     }
-    return await res.json();
-  } catch (err) {
-    if (retries > 0) {
-      console.warn(`Retrying fetch FX for ${currency} due to network error...`);
+  } catch {
+    if (retries > 0 && !isStaticGithubPagesHost()) {
       await new Promise(r => setTimeout(r, 500));
       return fetchFxHistoricalRange(currency, startDate, endDate, retries - 1);
     }
-    console.warn(`Failed to fetch FX historical range for ${currency} (network error):`, err);
-    return {};
   }
+  return fetchClientFallbackFxHistoricalRange(currency, startDate, endDate);
 }
 
 export interface AnalyzeResult {
@@ -464,7 +589,7 @@ export interface AnalyzeResult {
 }
 
 export async function analyzeHoldings(holdings: any[]): Promise<AnalyzeResult[]> {
-  const res = await fetch('/api/advisor/analyze', {
+  const res = await apiFetch('/api/advisor/analyze', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ holdings })
@@ -488,7 +613,7 @@ export interface PortfolioAnalysisResult {
 }
 
 export async function analyzePortfolio(holdings: any[], currency: string, totalValue: number): Promise<PortfolioAnalysisResult> {
-  const res = await fetch('/api/advisor/analyze-portfolio', {
+  const res = await apiFetch('/api/advisor/analyze-portfolio', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ holdings, currency, totalValue }),

@@ -30,7 +30,10 @@ jobs:
         run: npm install
 
       - name: Build application
-        run: npm run build
+        run: |
+          npx vite build
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

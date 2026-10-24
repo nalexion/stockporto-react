@@ -64,6 +64,28 @@ function aistudioMediaPlugin(): Plugin {
 }
 // LINT.ThenChange(//depot/google3/java/com/google/alkali/boq/makersuite/applet_dev_service/templates/initializers/react_theme/vite.config.ts:aistudio_media_plugin)
 
+function githubPagesSpaPlugin(): Plugin {
+  return {
+    name: 'vite-plugin-github-pages-spa',
+    closeBundle() {
+      const distDir = path.resolve(__dirname, 'dist');
+      const indexHtml = path.join(distDir, 'index.html');
+      const notFoundHtml = path.join(distDir, '404.html');
+      const noJekyll = path.join(distDir, '.nojekyll');
+      try {
+        if (fs.existsSync(indexHtml)) {
+          fs.copyFileSync(indexHtml, notFoundHtml);
+        }
+        if (fs.existsSync(distDir)) {
+          fs.writeFileSync(noJekyll, '');
+        }
+      } catch {
+        // Ignore non-fatal post-build copy errors
+      }
+    },
+  };
+}
+
 export default defineConfig(() => {
   const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8'));
   
@@ -74,7 +96,7 @@ export default defineConfig(() => {
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
     },
-    plugins: [react(), tailwindcss(), aistudioMediaPlugin()],
+    plugins: [react(), tailwindcss(), aistudioMediaPlugin(), githubPagesSpaPlugin()],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

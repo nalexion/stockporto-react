@@ -21,12 +21,29 @@ const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '256kb' }));
 
-// Baseline HTTP Security Headers (VULN-06)
-app.use((_req, res, next) => {
+// Baseline HTTP Security Headers (VULN-06) + CORS support for GitHub Pages (https://nalexion.github.io)
+const ALLOWED_CORS_ORIGINS = new Set([
+  'https://nalexion.github.io',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+]);
+
+app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-XSS-Protection', '0');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_CORS_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  }
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
   next();
 });
 
